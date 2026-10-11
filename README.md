@@ -299,19 +299,19 @@ The 30-day timeline deducts bills before income on the same date. Late income is
 
 ## Build and verify
 
-The [Android workflow](.github/workflows/android.yml) uses JDK 17, Gradle 8.7, Android Gradle Plugin 8.6.1, SDK 35, and build tools 34.0.0. It runs forecast tests, Android lint, an Android 15 emulator smoke test, and signature verification before publishing an APK and SHA-256 checksum. Instrumentation test dependencies are used only in tests; the app has no external runtime libraries.
+The [Android workflow](.github/workflows/android.yml) uses JDK 17, Gradle 8.7, Android Gradle Plugin 8.6.1, SDK 35, and build tools 34.0.0. It runs forecast tests, Android lint, an Android 15 emulator smoke test, and signature verification before publishing an APK and SHA-256 checksum. Runtime libraries are on-device only: ML Kit text recognition (receipt auto-scan OCR) and androidx.security (at-rest encryption vault). Instrumentation test dependencies are used only in tests.
 
 For local builds install those tools, set ANDROID_HOME, then run:
 
 ```sh
 node --test tests/*.test.cjs
-gradle :app:assembleDebug :app:lintDebug
+./gradlew :app:assembleDebug :app:lintDebug
 # With an emulator or device connected:
-gradle :app:connectedDebugAndroidTest
+./gradlew :app:connectedDebugAndroidTest
 ```
 
 APK: `app/build/outputs/apk/debug/app-debug.apk`.
-Open the project with an Android Studio version supporting AGP 8.6.1, or use the pinned Gradle installation above. A Gradle wrapper is not committed; CI supplies Gradle explicitly.
+Open the project with an Android Studio version supporting AGP 8.6.1, or use the committed Gradle 8.7 wrapper (`./gradlew` — the distribution is pinned and SHA-256-verified in `gradle/wrapper/gradle-wrapper.properties`).
 
 ## Source
 
