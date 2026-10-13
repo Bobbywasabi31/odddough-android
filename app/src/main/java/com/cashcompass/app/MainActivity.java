@@ -409,11 +409,17 @@ public class MainActivity extends Activity {
             // GitHub API on a worker thread. On-demand only (unauthenticated
             // limit is 60/hr/IP) — no background polling. Result arrives via
             // window.cashCompassUpdateCheck(json).
+            //
+            // NOTE: /releases/latest is unusable here — GitHub's "latest"
+            // endpoint excludes prereleases and drafts, and OddDough ships
+            // every version as a prerelease, so it always 404s. The list
+            // endpoint is newest-first; take the first non-draft entry
+            // (prereleases included).
             new Thread(() -> {
                 String result;
                 try {
                     javax.net.ssl.HttpsURLConnection conn = (javax.net.ssl.HttpsURLConnection)
-                        new java.net.URL("https://api.github.com/Bobbywasabi31/odddough-android/releases/latest").openConnection();
+                        new java.net.URL("https://api.github.com/repos/Bobbywasabi31/odddough-android/releases?per_page=5").openConnection();
                     conn.setRequestProperty("User-Agent", "OddDough-Updater");
                     conn.setRequestProperty("Accept", "application/vnd.github+json");
                     conn.setConnectTimeout(10000);
@@ -434,25 +440,30 @@ public class MainActivity extends Activity {
                             }
                             body = out.toString("UTF-8");
                         }
-                        org.json.JSONObject rel = new org.json.JSONObject(body);
-                        String apkUrl = null;
-                        org.json.JSONArray assets = rel.optJSONArray("assets");
-                        if (assets != null) for (int i = 0; i < assets.length(); i++) {
-                            org.json.JSONObject a = assets.optJSONObject(i);
-                            if (a != null && a.optString("name", "").endsWith(".apk")) {
-                                apkUrl = a.optString("browser_download_url", "");
-                                break;
+                        org.json.JSONObject rel = UpdateCheck.newestRelease(body);
+                        if (rel == null) {
+                            // The JS side renders 'No releases found.' for an empty tag.
+                            result = "{\"ok\":true,\"tag\":\"\"}";
+                        } else {
+                            String apkUrl = null;
+                            org.json.JSONArray assets = rel.optJSONArray("assets");
+                            if (assets != null) for (int i = 0; i < assets.length(); i++) {
+                                org.json.JSONObject a = assets.optJSONObject(i);
+                                if (a != null && a.optString("name", "").endsWith(".apk")) {
+                                    apkUrl = a.optString("browser_download_url", "");
+                                    break;
+                                }
                             }
+                            String notes = rel.optString("body", "");
+                            if (notes.length() > 2000) notes = notes.substring(0, 2000);
+                            org.json.JSONObject out = new org.json.JSONObject();
+                            out.put("ok", true);
+                            out.put("tag", rel.optString("tag_name", ""));
+                            out.put("name", rel.optString("name", ""));
+                            out.put("notes", notes);
+                            out.put("apkUrl", apkUrl == null ? org.json.JSONObject.NULL : apkUrl);
+                            result = out.toString();
                         }
-                        String notes = rel.optString("body", "");
-                        if (notes.length() > 2000) notes = notes.substring(0, 2000);
-                        org.json.JSONObject out = new org.json.JSONObject();
-                        out.put("ok", true);
-                        out.put("tag", rel.optString("tag_name", ""));
-                        out.put("name", rel.optString("name", ""));
-                        out.put("notes", notes);
-                        out.put("apkUrl", apkUrl == null ? org.json.JSONObject.NULL : apkUrl);
-                        result = out.toString();
                     }
                 } catch (java.net.UnknownHostException e) {
                     result = "{\"ok\":false,\"error\":\"No internet connection.\"}";

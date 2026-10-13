@@ -1,6 +1,6 @@
 /* Offline interface. The coach explains calculations; it is not a connected AI model. */
 'use strict';
-const C = CashCore, STORE = 'cash-compass-v2', APP_VERSION = '1.64.0';
+const C = CashCore, STORE = 'cash-compass-v2', APP_VERSION = '1.64.1';
 // Currency & locale (roadmap #89): money() renders in the user's base currency
 // and locale; moneyIn() renders a value in a specific account currency.
 const cur = () => C.currencySettings(state.currency);
@@ -152,7 +152,8 @@ function isUpdateAvailable(appVersion, releaseTag) {
   return false; // same X.Y.Z: the app doesn't know its own preview build number
 }
 function findApkUrl(releaseJson) {
-  // releaseJson: parsed https://api.github.com/.../releases/latest payload.
+  // releaseJson: one parsed release object from the https://api.github.com/.../releases
+  // list payload (MainActivity picks the newest non-draft entry, prereleases included).
   try {
     const assets = releaseJson && releaseJson.assets;
     if (!Array.isArray(assets)) return null;
