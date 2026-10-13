@@ -53,9 +53,11 @@ test('exits non-zero when versionName is missing', () => {
 });
 
 test('real build.gradle.kts resolves to the current version, single-sourced', () => {
+  const gradle = fs.readFileSync(REAL_GRADLE, 'utf8');
+  const v = gradle.match(/^[ \t]*versionName = "([^"]+)"/m)[1];
   const kv = runNaming(REAL_GRADLE, 98);
-  assert.equal(kv.VERSION, '1.64.0');
-  assert.equal(kv.TAG, 'v1.64.0-preview.98');
-  assert.equal(kv.TITLE, 'OddDough 1.64.0 preview 98');
-  assert.equal(kv.APK, 'OddDough-1.64.0-preview.apk');
+  assert.equal(kv.VERSION, v);
+  assert.equal(kv.TAG, `v${v}-preview.98`);
+  assert.equal(kv.TITLE, `OddDough ${v} preview 98`);
+  assert.equal(kv.APK, `OddDough-${v}-preview.apk`);
 });
