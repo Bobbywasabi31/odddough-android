@@ -87,8 +87,21 @@ jobs:
             app/build/outputs/androidTest-results/
             app/build/odddough.png
           if-no-files-found: ignore
-      - name: Publish downloadable preview
+      - name: Check whether this version was already released
+        # Only publish a preview release when the versionName changed since the
+        # last release. Docs/test-only pushes on an already-released version
+        # skip the release (CI still builds + tests), keeping the releases page
+        # at one entry per app version with the latest APK right at the top.
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        id: publish_check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          DECISION="$(scripts/release-should-publish.sh "${{ env.VERSION }}")"
+          echo "decision=$DECISION" >> "$GITHUB_OUTPUT"
+          echo "release decision for ${{ env.VERSION }}: $DECISION"
+      - name: Publish downloadable preview
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && steps.publish_check.outputs.decision == 'publish'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
