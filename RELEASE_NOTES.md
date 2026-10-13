@@ -1,3 +1,7 @@
+# 1.64.1
+
+- "Check for updates" fix: the updater queried GitHub's `/releases/latest` endpoint, which excludes prereleases — and OddDough ships every version as a prerelease — so it always reported "GitHub returned HTTP 404." It now reads the `/releases` list (newest first, prereleases included) and takes the first non-draft entry, via the new JVM-testable `UpdateCheck.newestRelease` helper (7 new unit tests).
+
 # 1.64.0
 
 - Encrypt remaining plaintext gaps (#8 remainder): the home-screen widget payload and the connected-coach API key now live in EncryptedSharedPreferences, and pre-update backup files are each their own EncryptedFile vault (the Keystore key survives app updates, so a pending backup still restores after the update). First launch migrates the old plaintext copies into the encrypted stores and wipes the originals; backups written by older versions still restore, with their plaintext file wiped after a successful read. Backups are deleted once verified or restored, and superseded ones are pruned. 7 new JS tests, 231 total pass.

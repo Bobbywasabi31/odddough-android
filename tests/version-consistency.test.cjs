@@ -11,6 +11,7 @@ const assert = require('node:assert/strict');
 const ROOT = path.join(__dirname, '..');
 const GRADLE = path.join(ROOT, 'app', 'build.gradle.kts');
 const APP_JS = path.join(ROOT, 'app', 'src', 'main', 'assets', 'app.js');
+const RELEASE_NOTES = path.join(ROOT, 'RELEASE_NOTES.md');
 
 const SEMVER = /^\d+\.\d+\.\d+$/;
 
@@ -36,4 +37,19 @@ test('in-app APP_VERSION matches versionName in build.gradle.kts', () => {
   const gradle = readGradleVersionName();
   const app = readAppVersion();
   assert.equal(app, gradle, `APP_VERSION '${app}' != versionName '${gradle}'`);
+});
+
+test('RELEASE_NOTES.md has an entry for the current versionName', () => {
+  // The 1.64.1 updater fix shipped with no RELEASE_NOTES entry; this makes
+  // a missing changelog entry a test failure instead of a silent omission.
+  const v = readGradleVersionName();
+  const text = fs.readFileSync(RELEASE_NOTES, 'utf8');
+  const headings = new Set(
+    text
+      .split('\n')
+      .map((l) => l.trim())
+      .filter((l) => l.startsWith('# '))
+      .map((l) => l.slice(2).trim())
+  );
+  assert.ok(headings.has(v), `RELEASE_NOTES.md has no '# ${v}' entry`);
 });
