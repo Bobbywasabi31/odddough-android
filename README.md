@@ -4,9 +4,85 @@ An offline cash-flow planner for hourly and irregular income.
 
 ## Download and install
 
-Open [Releases](https://github.com/Bobbywasabi31/cash-compass-android/releases) and download **Cash-Compass-1.47.0-preview.apk** from the newest successful preview. On your Android phone, tap the downloaded APK, allow your browser to install it when asked, and tap Install. Android 7.0 or newer is supported.
+Open [Releases](https://github.com/Bobbywasabi31/odddough-android/releases) and download **OddDough-`<version>`-preview.apk** attached to the newest preview release. On your Android phone, tap the downloaded APK, allow your browser to install it when asked, and tap Install. Android 7.0 or newer is supported.
 
 This is a debug-signed testing preview. Copy a backup from **You → Backup / restore** before uninstalling or changing preview builds. Preview builds currently use different debug signing certificates, so installing a later preview can require uninstalling the old one. Production signing and Play Store publishing are not configured.
+
+## New in 1.64.1: updater "Check for updates" fix
+
+**You → Check for updates** no longer always reports "GitHub returned HTTP 404." The updater was querying GitHub's `/releases/latest` endpoint, which excludes prereleases — and OddDough ships every version as a prerelease — so it never found anything. It now reads the `/releases` list (newest first, prereleases included) and takes the first non-draft entry.
+
+## New in 1.64.0: encrypted widget payload, AI key, and update backups
+
+Closes the last of the at-rest encryption gaps: the home-screen widget payload and the connected-coach API key now live in EncryptedSharedPreferences, and pre-update backup files are each encrypted in their own vault. First launch migrates the old plaintext copies and wipes the originals; backups written by older versions still restore.
+
+## New in 1.63: localization + multi-currency
+
+Open **You → Currency & locale** to pick a number/date locale, a base currency for totals, budgets, and forecasts, and a currency per account. Exchange rates are manual and offline-only — type them in (e.g. 1 USD = 0.92 EUR); nothing is ever fetched from the network. Changing the base currency re-scales your rates automatically, and the Accounts tab shows each balance in its own currency with its base-currency equivalent.
+
+## New in 1.62: at-rest encryption
+
+Your plan and automatic backups are stored in an encrypted on-device vault (AES-256-GCM, key in the Android Keystore) — no passphrase needed. The first launch migrates your existing data and wipes the plaintext copy. **You → Your data** shows the encryption status.
+
+## New in 1.61: bank-alert notification capture
+
+Open **You → Wallet & bank import**, set **Bank alerts** to On, and save. Bank transaction alerts are captured on-device from an allowlisted set of bank apps (Chase, Bank of America, Wells Fargo, Citi, Capital One, U.S. Bank, Discover, PNC, Navy Federal, American Express — exact packages listed in PRIVACY.md) and share the Wallet import's inbox, deduplication, and CSV reconciliation. Bank alerts never insert automatically — each one waits in **Needs review** for your confirmation, since bank formats vary and the right account is ambiguous. Enabling Wallet capture does not enable bank alerts.
+
+## New in 1.60.1: credit-union statement import fix
+
+PDF import now handles statements with year-less dates (e.g. credit-union "09/01" format — previously such statements imported zero transactions), and negative/Withdrawal–Deposit-prefixed amounts are correctly treated as expenses rather than income.
+
+## New in 1.60.0: PDF bank-statement import
+
+The Import/export dialog has a new **Choose PDF statement** button next to Choose CSV file. Pick a text-based bank statement PDF and its transactions are detected automatically, then shown in the same review preview as CSV imports before anything is saved. Everything is parsed on-device with a bundled PDF reader — the statement never leaves your phone.
+
+## New in 1.59.0: review banner on the Dashboard
+
+The "Google Wallet · N to review" banner now appears at the top of the Dashboard too, not just the Activity page. Tapping it jumps to the review screen.
+
+## New in 1.58.0: home-screen widgets
+
+Long-press your home screen to add the **Safe-to-spend widget** (safe-to-spend and days until payday) and the **Upcoming-bills widget** (next 3 bills due, with an overdue count). They refresh every time you save in the app, plus a daily refresh so day counts stay correct. Tapping a widget opens OddDough. Note: widget contents are visible on your home screen without unlocking the app.
+
+## New in 1.57.0: app lock
+
+Opt-in under **You → App lock**. Asks for your fingerprint/face or phone PIN every time OddDough opens, and hides the app's preview in the recent-apps screen. Unlock is handled entirely by Android's system prompt — the app never sees your biometric data or PIN. Needs a phone screen lock to be set first.
+
+## New in 1.56.0: new name — OddDough
+
+Cash Compass is now **OddDough** — same app, same data, fresh identity. Your plan, backups, and settings carry over untouched; the package name is unchanged, so this installs right over the previous preview.
+
+## New in 1.55.0: "needs review" banner
+
+When Wallet notifications need review, a banner at the top of Today reads "N transactions need review" and jumps straight to the review screen. It also appears on the Plan tab.
+
+## New in 1.54.0: weekly recap + launcher shortcuts
+
+**Weekly money recap:** opt-in Sunday notification with last week's spending vs income, safe-to-spend, and bills due in the next 7 days. Enable it under You → Reminders. **Launcher shortcuts:** long-press the app icon for one-tap "Add expense" and "Add income".
+
+## New in 1.53.0: smarter receipt merchant names
+
+Receipt scan now uses text size and position to tell the actual merchant apart from payment artifacts like "VERIFIED BY PIN" or "REG FUEL". If the name can't be read confidently, the field is left empty instead of guessed wrong.
+
+## New in 1.52.0: receipt auto-scan
+
+Attaching a receipt photo now reads it on-device (ML Kit OCR) and fills in merchant, total, and date automatically. Nothing leaves your phone. Photos are auto-rotated upright and downscaled so they stay small.
+
+## New in 1.51.0: receipt photos on Android + layout fix
+
+The photo picker now opens correctly (camera or gallery) when attaching a receipt to a transaction. Also fixed the "+ Add transaction" button layout on narrow screens.
+
+## New in 1.50.0: encrypted backups
+
+Protect your backup with a passphrase (AES-256). Download and restore from Backup / restore.
+
+## New in 1.49.0: tablet/landscape polish + performance
+
+Better layouts on tablets, landscape phones, and foldables (dual-screen support). Faster transaction search, verified smooth with 10,000+ transactions.
+
+## New in 1.48.0: receipt photo attachments + Quick add
+
+Snap a photo of your receipt (camera on Android) or attach from gallery — stored locally with the transaction. The new ⚡ **Quick add** button on Home takes two taps for cash purchases: type amount, tap category, done.
 
 ## New in 1.47.0: Accessibility pass
 
@@ -243,18 +319,6 @@ Open **Cash Flow** for a monthly, quarterly, or annual diagram, or **Reports →
 Proportional bands show recorded income flowing into spending groups and **Saved** (income minus expenses). When expenses exceed income, a **Funding gap** balances the diagram without assuming borrowing or another funding source. Empty and transfer-only periods show an empty state; transfers never count as income or spending. Saved is not an account balance, goal contribution, or safe-to-spend estimate.
 
 Groups below 3% of their side's total are combined into **Other**. The diagram shows up to five named income groups and six named expense groups; additional groups also join Other. An existing Other category joins the same bucket. Open **View exact amounts and Other details** to see every included group and cent. On phones, swipe the chart horizontally or use the stacked tables. This is a read-only view of recorded transactions; no new permissions, data collection, or backup schema changes.
-
-## New in 1.63: localization + multi-currency
-
-Open **You → Currency & locale** to pick a number/date locale, a base currency for totals, budgets, and forecasts, and a currency per account. Exchange rates are manual and offline-only — type them in (e.g. 1 USD = 0.92 EUR); nothing is ever fetched from the network. Changing the base currency re-scales your rates automatically, and the Accounts tab shows each balance in its own currency with its base-currency equivalent.
-
-## New in 1.62: at-rest encryption
-
-Your plan and automatic backups are stored in an encrypted on-device vault (AES-256-GCM, key in the Android Keystore) — no passphrase needed. The first launch migrates your existing data and wipes the plaintext copy. Since 1.64.0 the home-screen widget payload, the connected-coach API key, and the pre-update backup files are encrypted too (the last of the #8 plaintext gaps). **You → Your data** shows the encryption status.
-
-## New in 1.61: bank-alert notification capture
-
-Open **You → Wallet & bank import**, set **Bank alerts** to On, and save. Bank transaction alerts are captured on-device from an allowlisted set of bank apps (Chase, Bank of America, Wells Fargo, Citi, Capital One, U.S. Bank, Discover, PNC, Navy Federal, American Express — exact packages listed in PRIVACY.md) and share the Wallet import's inbox, deduplication, and CSV reconciliation. Bank alerts never insert automatically — each one waits in **Needs review** for your confirmation, since bank formats vary and the right account is ambiguous. Enabling Wallet capture does not enable bank alerts.
 
 ## New in 1.5: Google Wallet purchase import
 
