@@ -106,6 +106,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           # Tag and title come from the Resolve release naming step — one version source.
-          # Only the latest version's notes — keeps the releases page short
-          awk '/^# /{if(++c>1) exit} {print}' RELEASE_NOTES.md > dist/NOTES.md
+          # Notes are the RELEASE_NOTES.md section matching the released version,
+          # not blindly the top entry (a release that went out before its notes
+          # entry landed — v1.64.1-preview.104 — used to ship stale notes).
+          scripts/release-extract-notes.sh "${{ env.VERSION }}" > dist/NOTES.md
           gh release create "$TAG" "dist/$APK" dist/SHA256SUMS.txt --target "$GITHUB_SHA" --title "$TITLE" --prerelease --notes-file dist/NOTES.md
