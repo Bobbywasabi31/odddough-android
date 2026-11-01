@@ -8,6 +8,10 @@ Open [Releases](https://github.com/Bobbywasabi31/odddough-android/releases) and 
 
 This is a debug-signed testing preview. Copy a backup from **You → Backup / restore** before uninstalling or changing preview builds. Preview builds currently use different debug signing certificates, so installing a later preview can require uninstalling the old one. Production signing and Play Store publishing are not configured.
 
+## New in 1.64.2: date-logic fixes + coach crash fix
+
+Month-over-month, top merchants, spending trends, and savings rate now honor the reference date their callers pass (they silently used the wall clock before — invisible in the app, but it made the test suite fail the day the calendar rolled to November). The coach's spending-trend answer also crashed on a wrong result shape; it answers properly now. All 21 JS test suites pass and are date-deterministic.
+
 ## New in 1.64.1: updater "Check for updates" fix
 
 **You → Check for updates** no longer always reports "GitHub returned HTTP 404." The updater was querying GitHub's `/releases/latest` endpoint, which excludes prereleases — and OddDough ships every version as a prerelease — so it never found anything. It now reads the `/releases` list (newest first, prereleases included) and takes the first non-draft entry.

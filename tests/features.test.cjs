@@ -593,14 +593,14 @@ test('top merchants rank by spend with period filter',()=>{
  const s=C.blank();
  const add=(label,amount,month)=>{s.transactions.push({id:'m'+label+month,label,amount,date:month+'-15',type:'expense',category:'Food',accountId:'cash'});};
  add('Chipotle',50,'2026-09');add('CHIPOTLE #123',30,'2026-09');add('Shell',80,'2026-08');add('Old store',200,'2025-01');
- const r=C.topMerchants(s,12,10);
+ const r=C.topMerchants(s,12,10,'2026-10-15');
  assert.equal(r.length,2);
  assert.equal(r[0].label,'Chipotle');
  assert.equal(r[0].total,80);
  assert.equal(r[0].count,2);
  assert.equal(r[1].label,'Shell');
  assert.equal(r[1].total,80);
- assert.equal(C.topMerchants(s,2,10).length,1);
+ assert.equal(C.topMerchants(s,2,10,'2026-10-15').length,1);
  assert.equal(C.topMerchants(C.blank(),12,10).length,0);
 });
 
@@ -625,7 +625,7 @@ test('spending trends track per-category monthly totals',()=>{
  const s=C.blank();
  const add=(cat,amount,month)=>{s.transactions.push({id:'t'+cat+month+amount,label:cat,amount,date:month+'-15',type:'expense',category:cat,accountId:'cash'});};
  add('Food',100,'2026-08');add('Food',150,'2026-09');add('Transport',50,'2026-09');
- const t=C.spendingTrends(s,3);
+ const t=C.spendingTrends(s,3,'2026-10-15');
  assert.equal(t.length,3);
  const aug=t.find(x=>x.month==='2026-08'), sep=t.find(x=>x.month==='2026-09');
  assert.equal(aug.categories.Food,100);
@@ -638,7 +638,7 @@ test('month-over-month ranks category changes',()=>{
  const s=C.blank();
  const add=(cat,amount,month)=>{s.transactions.push({id:'m'+cat+month,label:cat,amount,date:month+'-15',type:'expense',category:cat,accountId:'cash'});};
  add('Food',100,'2026-09');add('Food',200,'2026-10');add('Transport',80,'2026-09');add('Transport',80,'2026-10');
- const m=C.monthOverMonth(s);
+ const m=C.monthOverMonth(s,'2026-10-15');
  assert.equal(m.cur,'2026-10');
  assert.equal(m.prev,'2026-09');
  const food=m.rows.find(r=>r.category==='Food');

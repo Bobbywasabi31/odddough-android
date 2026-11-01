@@ -1,6 +1,6 @@
 /* Offline interface. The coach explains calculations; it is not a connected AI model. */
 'use strict';
-const C = CashCore, STORE = 'cash-compass-v2', APP_VERSION = '1.64.1';
+const C = CashCore, STORE = 'cash-compass-v2', APP_VERSION = '1.64.2';
 // Currency & locale (roadmap #89): money() renders in the user's base currency
 // and locale; moneyIn() renders a value in a specific account currency.
 const cur = () => C.currencySettings(state.currency);
@@ -387,7 +387,7 @@ function answer(q) {
   if (/net worth|worth/.test(text)) { const w = C.netWorth(state); return `Your entered net worth is ${money(w.total)}: ${money(w.cash)} cash, ${money(w.investments)} investments, plus ${money(w.manualNet || 0)} in manual assets, minus debts.`; }
   if (/budget/.test(text)) { const b = C.budget(state, C.localDate().slice(0, 7)); const spent = b.rows.reduce((s, r) => s + r.spent, 0), planned = b.rows.reduce((s, r) => s + r.available, 0); return planned ? `This month you've spent ${money(spent)} of ${money(planned)} budgeted (${Math.round(spent / planned * 100)}%). ${b.unbudgeted ? `${money(b.unbudgeted)} is unbudgeted. ` : ''}See Budget for details.` : 'No budget set for this month yet. Add categories in Budget.'; }
   if (/debt|loan|owe/.test(text)) { const d = C.debtPayoff(state); return d.length ? `You have ${d.length} debt${d.length === 1 ? '' : 's'}. The snowball plan clears them in about ${d[d.length - 1].month}. See Recurring → Debt payoff for the schedule.` : 'No debts entered. Add them in Recurring to plan payoff.'; }
-  if (/trend|spending/.test(text)) { const tr = C.spendingTrends(state, 6); const rows = tr.rows.filter(r => r.total > 0); return rows.length < 2 ? 'Not enough months for a trend yet.' : `Spending ${rows[rows.length - 1].total >= rows[0].total ? 'rose' : 'fell'} from ${money(rows[0].total)} to ${money(rows[rows.length - 1].total)} over ${rows.length} months. See Reports → Trends.`; }
+  if (/trend|spending/.test(text)) { const tr = C.spendingTrends(state, 6); const rows = tr.map(r => ({ month: r.month, total: C.dollars(Object.values(r.categories).reduce((s, v) => s + C.cents(v), 0)) })).filter(r => r.total > 0); return rows.length < 2 ? 'Not enough months for a trend yet.' : `Spending ${rows[rows.length - 1].total >= rows[0].total ? 'rose' : 'fell'} from ${money(rows[0].total)} to ${money(rows[rows.length - 1].total)} over ${rows.length} months. See Reports → Trends.`; }
   return 'I can explain spending estimates, bills, taxes, goals, work hours, savings rate, net worth, budget, debt, or trends. Try "What is my savings rate?"';
 }
 function coach() {

@@ -1,3 +1,7 @@
+# 1.64.2
+
+- Date-logic fixes: month-over-month, top merchants, spending trends, and savings rate now all honor the reference date their callers pass instead of silently reading the wall clock (behavior on the default path is unchanged — but the features test suite had been silently date-fragile and went red the moment the calendar rolled to November). Also fixed a crash in the coach: asking about spending trends hit a wrong result shape (`tr.rows` on an array) and would have thrown instead of answering. All 21 JS suites pass, now date-deterministic.
+
 # 1.64.1
 
 - "Check for updates" fix: the updater queried GitHub's `/releases/latest` endpoint, which excludes prereleases — and OddDough ships every version as a prerelease — so it always reported "GitHub returned HTTP 404." It now reads the `/releases` list (newest first, prereleases included) and takes the first non-draft entry, via the new JVM-testable `UpdateCheck.newestRelease` helper (7 new unit tests).

@@ -2194,7 +2194,7 @@
   // runway warnings, and savings trends.
   function insights(state, today = localDate()) {
     const cards = [];
-    const mom = monthOverMonth(state);
+    const mom = monthOverMonth(state, today);
     mom.rows.slice(0, 3).forEach(r => {
       if (r.change <= 0 || r.pct < 20) return;
       cards.push({ kind: 'spike', title: `${r.category} is ${r.pct}% over last month`,
@@ -2212,7 +2212,7 @@
     const rw = runway(state, avgMonthly(state, 'income', today, 3), avgMonthly(state, 'expense', today, 3));
     if (!rw.indefinite && rw.weeks < 4) cards.push({ kind: 'runway', title: `Cash covers about ${Math.max(1, Math.round(rw.weeks * 7))} days`,
       detail: {}, tone: rw.weeks < 2 ? 'bad' : 'warn' });
-    const sr = savingsRate(state, 3);
+    const sr = savingsRate(state, 3, today);
     if (sr.overall !== null && sr.rows.length >= 2) {
       const rates = sr.rows.filter(r => r.rate !== null).map(r => r.rate);
       if (rates.length >= 2 && rates[rates.length - 1] > rates[0] + 5)
@@ -2230,9 +2230,9 @@
   // Auto-drafted monthly review (roadmap #80): structured data for a
   // data-derived summary of what changed this month.
   function monthlyReview(state, today = localDate()) {
-    const mom = monthOverMonth(state);
+    const mom = monthOverMonth(state, today);
     const up = mom.rows.filter(r => r.change > 0), down = mom.rows.filter(r => r.change < 0);
-    const sr = savingsRate(state, 2);
+    const sr = savingsRate(state, 2, today);
     const cur = sr.rows.find(r => r.month === mom.cur), prev = sr.rows.find(r => r.month === mom.prev);
     const bills = (state.bills || []).filter(b => b.date.slice(0, 7) === mom.cur);
     return { month: mom.cur, prev: mom.prev,
@@ -2872,10 +2872,9 @@
   }
   // Top merchants (roadmap #63): expense transactions grouped by merchant,
   // ranked by total spend, with a period filter.
-  function topMerchants(state, monthsBack = 12, limit = 10) {
+  function topMerchants(state, monthsBack = 12, limit = 10, today = localDate()) {
     monthsBack = Math.max(1, Math.min(60, Math.round(number(monthsBack, 1))));
     limit = Math.max(1, Math.min(50, Math.round(number(limit, 1))));
-    const today = localDate();
     const [y, m] = today.split('-').map(Number);
     const cutoff = new Date(Date.UTC(y, m - monthsBack, 1)).toISOString().slice(0, 10);
     const byMerchant = {};
@@ -2890,9 +2889,8 @@
   }
   // Spending trends (roadmap #59): per-category expense totals for each of
   // the last N months.
-  function spendingTrends(state, monthsBack = 12) {
+  function spendingTrends(state, monthsBack = 12, today = localDate()) {
     monthsBack = Math.max(2, Math.min(60, Math.round(number(monthsBack, 1))));
-    const today = localDate();
     const [y, m] = today.split('-').map(Number);
     const out = [];
     for (let i = monthsBack - 1; i >= 0; i--) {
@@ -2910,8 +2908,7 @@
   }
   // Month-over-month insights (roadmap #60): where spending rose or fell
   // versus last month, ranked by dollar change.
-  function monthOverMonth(state) {
-    const today = localDate();
+  function monthOverMonth(state, today = localDate()) {
     const [y, m] = today.split('-').map(Number);
     const cur = new Date(Date.UTC(y, m - 1, 1)).toISOString().slice(0, 7);
     const prev = new Date(Date.UTC(y, m - 2, 1)).toISOString().slice(0, 7);
@@ -2932,8 +2929,8 @@
     }).sort((a, b) => Math.abs(cents(b.change)) - Math.abs(cents(a.change))) };
   }
   // Savings rate (roadmap #68): percent of income saved per month with trend.
-  function savingsRate(state, monthsBack = 12) {
-    const rows = monthlyTotals(state, localDate(), monthsBack).map(r => {
+  function savingsRate(state, monthsBack = 12, today = localDate()) {
+    const rows = monthlyTotals(state, today, monthsBack).map(r => {
       const savedCents = cents(r.income) - cents(r.expense);
       return { month: r.month, income: r.income, expense: r.expense, saved: dollars(savedCents),
         rate: r.income > 0 ? Math.round(savedCents / cents(r.income) * 1000) / 10 : null };
