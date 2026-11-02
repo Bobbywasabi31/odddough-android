@@ -10,15 +10,37 @@ android {
         applicationId = "com.cashcompass.app"
         minSdk = 24
         targetSdk = 35
-        versionCode = 71
-        versionName = "1.64.2"
+        versionCode = 72
+        versionName = "1.64.3"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    // Stable signing for preview builds: when CI provides the keystore
+    // (ODDDOUGH_KEYSTORE_FILE env pointing at the decoded file, passwords
+    // from repo secrets), every build is signed with the SAME key, so the
+    // in-app updater can install a new preview over the previous one.
+    // Without those envs (local dev, fork PRs) the default per-machine
+    // debug key is used, exactly as before.
+    val stableStoreFile = System.getenv("ODDDOUGH_KEYSTORE_FILE")
+    signingConfigs {
+        if (!stableStoreFile.isNullOrBlank()) {
+            create("stable") {
+                storeFile = file(stableStoreFile)
+                storePassword = System.getenv("ODDDOUGH_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("ODDDOUGH_KEY_ALIAS")
+                keyPassword = System.getenv("ODDDOUGH_KEY_PASSWORD")
+                storeType = "PKCS12"
+            }
+        }
     }
 
     buildTypes {
         debug {
             applicationIdSuffix = ".preview"
             versionNameSuffix = "-preview"
+            if (!stableStoreFile.isNullOrBlank()) {
+                signingConfig = signingConfigs.getByName("stable")
+            }
         }
     }
     compileOptions {

@@ -1,3 +1,7 @@
+# 1.64.3
+
+- **In-app updates work from here on.** Every preview build is now signed with one permanent key instead of a fresh throwaway key per build — mismatched signatures were the reason Android refused to install updates over the previous version. One last manual step to get onto the new key: back up (You → Backup / restore), uninstall, install this build, restore. After that, You → Check for updates can download and install future previews in place (Android will ask once for permission to install).
+
 # 1.64.2
 
 - Date-logic fixes: month-over-month, top merchants, spending trends, and savings rate now all honor the reference date their callers pass instead of silently reading the wall clock (behavior on the default path is unchanged — but the features test suite had been silently date-fragile and went red the moment the calendar rolled to November). Also fixed a crash in the coach: asking about spending trends hit a wrong result shape (`tr.rows` on an array) and would have thrown instead of answering. All 21 JS suites pass, now date-deterministic.

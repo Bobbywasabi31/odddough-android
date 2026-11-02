@@ -8,6 +8,10 @@ Open [Releases](https://github.com/Bobbywasabi31/odddough-android/releases) and 
 
 This is a debug-signed testing preview. Copy a backup from **You → Backup / restore** before uninstalling or changing preview builds. Preview builds currently use different debug signing certificates, so installing a later preview can require uninstalling the old one. Production signing and Play Store publishing are not configured.
 
+## New in 1.64.3: permanent signing key — in-app updates from here on
+
+Preview builds are now all signed with one permanent key (kept as a repo CI secret; the owner holds the backup copy), replacing the fresh throwaway debug key each build used before. Signature mismatches were what made Android refuse in-app installs. Getting onto the new key takes one last backup → uninstall → install → restore cycle; every update after that installs from inside the app via You → Check for updates.
+
 ## New in 1.64.2: date-logic fixes + coach crash fix
 
 Month-over-month, top merchants, spending trends, and savings rate now honor the reference date their callers pass (they silently used the wall clock before — invisible in the app, but it made the test suite fail the day the calendar rolled to November). The coach's spending-trend answer also crashed on a wrong result shape; it answers properly now. All 21 JS test suites pass and are date-deterministic.
