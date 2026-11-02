@@ -1,6 +1,6 @@
 /* Offline interface. The coach explains calculations; it is not a connected AI model. */
 'use strict';
-const C = CashCore, STORE = 'cash-compass-v2', APP_VERSION = '1.64.3';
+const C = CashCore, STORE = 'cash-compass-v2', APP_VERSION = '1.64.4';
 // Currency & locale (roadmap #89): money() renders in the user's base currency
 // and locale; moneyIn() renders a value in a specific account currency.
 const cur = () => C.currencySettings(state.currency);
@@ -423,12 +423,25 @@ function modal() {
     body = `<p>${esc(x.label)} · ${money(x.amount)}</p><p class="small">Choose whether this payment is already reflected in the cash balance you entered.</p><div class="form-grid"><button class="primary" data-confirm="adjust">${kind === 'incomes' ? 'Add to cash and mark received' : 'Subtract from cash and mark paid'}</button><button class="secondary" data-confirm="included">Already in my cash balance</button></div>`;
   } else if (dialog.mode === 'backup') {
     title = 'Backup / restore';
-    body = `<p class="small">Copy all text and save it somewhere private. Wallet review text may contain purchase details. Restoring pauses capture and clears unprocessed native notifications. To restore, paste an OddDough backup and tap Restore. Restoring replaces this plan — an automatic backup is saved first.</p><form id="restoreForm" class="form-grid"><label>Backup JSON<textarea name="backup" spellcheck="false" required>${esc(JSON.stringify(state, null, 2))}</textarea></label><button class="secondary" type="button" data-action="select-backup">Select all for copying</button><button class="primary">Restore this backup</button></form><hr><h3>Encrypted backup</h3><p class="small">Protect your backup with a passphrase (AES-256). Use at least 8 characters and don't lose it — there's no recovery.</p><form id="encryptForm" class="form-grid"><label>Passphrase<input type="password" name="passphrase" minlength="8" required autocomplete="new-password"></label><button class="secondary" type="submit">Download encrypted backup</button></form><form id="decryptForm" class="form-grid"><label>Encrypted backup JSON<textarea name="encrypted" spellcheck="false" required placeholder='Paste {"format":"cash-compass-encrypted",...}'></textarea></label><label>Passphrase<input type="password" name="passphrase" required autocomplete="current-password"></label><button class="secondary" type="submit">Decrypt and restore</button></form>`;
+    body = `<p class="small">Your backup is one file — download it and keep it somewhere private (Wallet review text may contain purchase details). To restore, choose that file here. Restoring replaces this plan — an automatic backup is saved first, and restoring pauses Wallet capture and clears unprocessed native notifications.</p><div class="row-actions"><button class="primary" type="button" data-action="download-backup">Download backup file</button><button class="secondary" type="button" data-action="upload-backup">Restore from file</button></div><input type="file" id="backupFileInput" accept=".json,application/json" hidden><hr><form id="restoreForm" class="form-grid"><label>Or paste a backup<textarea name="backup" spellcheck="false" required placeholder="Paste an OddDough backup (JSON)">${esc(JSON.stringify(state, null, 2))}</textarea></label><button class="secondary" type="button" data-action="select-backup">Select all for copying</button><button class="primary">Restore this backup</button></form><hr><h3>Encrypted backup</h3><p class="small">Protect your backup with a passphrase (AES-256). Use at least 8 characters and don't lose it — there's no recovery.</p><form id="encryptForm" class="form-grid"><label>Passphrase<input type="password" name="passphrase" minlength="8" required autocomplete="new-password"></label><button class="secondary" type="submit">Download encrypted backup</button></form><form id="decryptForm" class="form-grid"><label>Encrypted backup JSON<textarea name="encrypted" spellcheck="false" required placeholder='Paste {"format":"cash-compass-encrypted",...}'></textarea></label><button class="secondary" type="button" data-action="upload-encrypted">Choose encrypted file</button><label>Passphrase<input type="password" name="passphrase" required autocomplete="current-password"></label><button class="secondary" type="submit">Decrypt and restore</button></form><input type="file" id="encryptedFileInput" accept=".json,application/json" hidden>`;
   } else {
     title = 'Confirm change';
     body = `<p>${dialog.mode === 'remove' ? `${kind === 'holdings' ? 'Remove this holding from your portfolio and net worth?' : kind === 'lifeEvents' ? 'Remove this scenario event?' : kind === 'transactions' ? 'Delete '+esc(x.label)+'? This reverses its original cash and tax adjustments. Any settled schedule stays advanced.' : 'Remove '+esc(x.label || x.category)+'? This does not change cash. Repeating entries stop after removal.'}` : dialog.mode === 'demo' ? 'Replace this plan with sample data? An automatic backup of your current plan is saved first — restore it anytime from You → Automatic backups.' : dialog.mode === 'clear-memory' ? 'Forget all remembered merchants? Category and account suggestions start over; your transactions stay unchanged.' : dialog.mode === 'restore-auto' ? 'Restore this automatic backup? Your current plan is backed up first, so nothing is lost.' : 'Clear your plan and start with no entries? An automatic backup is saved first — restore it anytime from You → Automatic backups.'}</p><button class="primary" data-confirm="yes">${dialog.mode === 'remove' ? 'Remove entry' : dialog.mode === 'clear-memory' ? 'Clear merchant memory' : dialog.mode === 'restore-auto' ? 'Restore backup' : 'Replace plan'}</button>`;
   }
   return `<div class="modal-backdrop"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="dialogTitle"><div class="modal-head"><h2 id="dialogTitle">${title}</h2><button class="close" data-action="close" aria-label="Close dialog">×</button></div>${body}<p id="formError" role="alert" class="danger small"></p></section></div>`;
+}
+// File-based backup restore: same application path as the paste form
+// (auto-backup first, normalize, wallet pause, persist), driven by the
+// chosen file's text instead of the textarea.
+function restoreFromBackupText(text) {
+  const restored = C.normalize(JSON.parse(text));
+  autoBackup('before restore');
+  pauseWallet();
+  persist(restored, true);
+  pauseWallet(true);
+  dialog = null; reply = '';
+  render();
+  flash('Backup restored');
 }
 // Receipt photo handling (roadmap #35): normalize orientation via EXIF,
 // downscale, and store as a data URL on select.
@@ -437,6 +450,24 @@ document.addEventListener('change', async e => {
     const f = e.target.files[0];
     e.target.value = '';
     importPdfStatement(f);
+    return;
+  }
+  if (e.target.id === 'backupFileInput' && e.target.files && e.target.files[0]) {
+    const f = e.target.files[0];
+    e.target.value = '';
+    f.text().then(text => {
+      try { restoreFromBackupText(text); }
+      catch (err) { const el = document.getElementById('formError'); const msg = 'That file is not a valid OddDough backup.'; if (el) el.textContent = msg; else flash(msg); }
+    }).catch(() => flash('Could not read that file.'));
+    return;
+  }
+  if (e.target.id === 'encryptedFileInput' && e.target.files && e.target.files[0]) {
+    const f = e.target.files[0];
+    e.target.value = '';
+    f.text().then(text => {
+      const ta = document.querySelector('#decryptForm textarea[name=encrypted]');
+      if (ta) { ta.value = text; flash('Encrypted backup loaded — enter the passphrase and tap Decrypt and restore.'); }
+    }).catch(() => flash('Could not read that file.'));
     return;
   }
   if (e.target.name === 'receipt' && e.target.files && e.target.files[0]) {
@@ -754,6 +785,9 @@ if(b.dataset.action==='csv-import' && csvPreview){const keep=app.querySelector('
     }
     else if (b.dataset.action === 'close') dialog = null;
     else if (b.dataset.action === 'select-backup') { app.querySelector('textarea').select(); flash('Selected. Touch and hold to copy.'); return; }
+    else if (b.dataset.action === 'download-backup') { download(`odddough-backup-${C.localDate()}.json`, JSON.stringify(state, null, 2), 'application/json'); flash('Backup downloaded.'); return; }
+    else if (b.dataset.action === 'upload-backup') { document.getElementById('backupFileInput')?.click(); return; }
+    else if (b.dataset.action === 'upload-encrypted') { document.getElementById('encryptedFileInput')?.click(); return; }
     else if (['fresh', 'demo', 'backup', 'clear-memory'].includes(b.dataset.action)) dialog = { mode: b.dataset.action };
     else if (b.dataset.action === 'restore-auto') { dialog = { mode: 'restore-auto', id: b.dataset.slot }; }
     else if (b.dataset.confirm && dialog) {

@@ -8,6 +8,10 @@ Open [Releases](https://github.com/Bobbywasabi31/odddough-android/releases) and 
 
 This is a debug-signed testing preview. Copy a backup from **You → Backup / restore** before uninstalling or changing preview builds. Preview builds currently use different debug signing certificates, so installing a later preview can require uninstalling the old one. Production signing and Play Store publishing are not configured.
 
+## New in 1.64.4: download / upload backup files
+
+Backup / restore no longer makes you copy and paste a wall of JSON text. The dialog now leads with **Download backup file** and **Restore from file** (system file picker); the encrypted backup can also be loaded from a file for decryption. The paste path remains as a fallback for older text backups. Format and restore behavior are unchanged.
+
 ## New in 1.64.3: permanent signing key — in-app updates from here on
 
 Preview builds are now all signed with one permanent key (kept as a repo CI secret; the owner holds the backup copy), replacing the fresh throwaway debug key each build used before. Signature mismatches were what made Android refuse in-app installs. Getting onto the new key takes one last backup → uninstall → install → restore cycle; every update after that installs from inside the app via You → Check for updates.

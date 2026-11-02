@@ -1,3 +1,7 @@
+# 1.64.4
+
+- **Backup / restore is file-based now** (Alex's request): the Backup / restore dialog leads with **Download backup file** (saves `odddough-backup-<date>.json`) and **Restore from file** (system file picker — no more copying a wall of JSON text by hand). The encrypted section gained a matching **Choose encrypted file** button that loads the file for passphrase decryption. The old paste-a-backup textarea stays as a fallback for backups previously saved as text. Same backup format, same restore path (automatic backup first, then restore) — only the transport changed.
+
 # 1.64.3
 
 - **In-app updates work from here on.** Every preview build is now signed with one permanent key instead of a fresh throwaway key per build — mismatched signatures were the reason Android refused to install updates over the previous version. One last manual step to get onto the new key: back up (You → Backup / restore), uninstall, install this build, restore. After that, You → Check for updates can download and install future previews in place (Android will ask once for permission to install).
