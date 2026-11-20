@@ -6,7 +6,11 @@ An offline cash-flow planner for hourly and irregular income.
 
 Open [Releases](https://github.com/Bobbywasabi31/odddough-android/releases) and download **OddDough-`<version>`-preview.apk** attached to the newest preview release. On your Android phone, tap the downloaded APK, allow your browser to install it when asked, and tap Install. Android 7.0 or newer is supported.
 
-This is a debug-signed testing preview. Copy a backup from **You → Backup / restore** before uninstalling or changing preview builds. Preview builds currently use different debug signing certificates, so installing a later preview can require uninstalling the old one. Production signing and Play Store publishing are not configured.
+This is a testing preview signed with OddDough's permanent preview key (since 1.64.3), so newer previews install right over older ones — including from inside the app via **You → Check for updates**. Back up from **You → Backup / restore** before the one-time move onto the permanent key from a pre-1.64.3 build. Production signing and Play Store publishing are not configured.
+
+## New in 1.65.0: statement balance checks
+
+Each account has a **Balance check** button: enter the balance your bank statement shows, and OddDough records it beside the balance it calculates, with the exact difference kept in a per-account history. A check never changes your balances — it's a dated record of how far off the app is, so drift gets caught instead of silently absorbed. (This was the one feature worth merging from the OpenLedger comparison; OddDough's transfers and holdings already went further.)
 
 ## New in 1.64.4: download / upload backup files
 

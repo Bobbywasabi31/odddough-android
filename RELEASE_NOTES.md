@@ -1,3 +1,8 @@
+# 1.65.0
+
+- **Statement balance checks** (merged from the OpenLedger comparison): every account gains a **Balance check** button. Enter the balance your statement shows and OddDough records it next to the balance it calculates, keeping the exact difference on record per account — a check **never adjusts your balances**, it just gives you a dated paper trail of how far off the app is and when. Checks survive backup/restore, and an account with checks on record can't be deleted until they're removed (same preserve-history rule as transactions). 7 new tests.
+- Also fixed a silently date-fragile test: `incomeStreams` now takes an optional reference date (the pattern from 1.64.2) instead of always reading the wall clock — its test went red mid-month when the anchor payday had already passed. Full suite: 256 tests, all passing.
+
 # 1.64.4
 
 - **Backup / restore is file-based now** (Alex's request): the Backup / restore dialog leads with **Download backup file** (saves `odddough-backup-<date>.json`) and **Restore from file** (system file picker — no more copying a wall of JSON text by hand). The encrypted section gained a matching **Choose encrypted file** button that loads the file for passphrase decryption. The old paste-a-backup textarea stays as a fallback for backups previously saved as text. Same backup format, same restore path (automatic backup first, then restore) — only the transport changed.

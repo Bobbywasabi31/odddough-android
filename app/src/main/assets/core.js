@@ -119,7 +119,7 @@
     catch (e) { return value; }
   }
   function blank() {
-    return { version: 6, demo: false, profile: { name: 'there', balance: 0, hourlyRate: 0, taxRate: 0, buffer: 0, taxHeld: 0, sideTaxRate: 25, taxReminder: false }, incomes: [], bills: [], goals: [], transactions: [], budgets: [], budgetMoves: [], sinkingFunds: [], debts: [], milestones: [], dividends: [], contributions: [], manualAssets: [], accounts: [], reminders: false, weeklySummary: false, holdings: [], balanceHistory: [], lifeEvents: [], merchantMemory: {}, forecastSettings: forecastOptions(), currency: currencySettings(), hiddenCards: [], savedFilters: [], rules: [], wallet: walletData() };
+    return { version: 6, demo: false, profile: { name: 'there', balance: 0, hourlyRate: 0, taxRate: 0, buffer: 0, taxHeld: 0, sideTaxRate: 25, taxReminder: false }, incomes: [], bills: [], goals: [], transactions: [], budgets: [], budgetMoves: [], sinkingFunds: [], debts: [], milestones: [], dividends: [], contributions: [], manualAssets: [], accounts: [], reminders: false, weeklySummary: false, holdings: [], balanceHistory: [], balanceChecks: [], lifeEvents: [], merchantMemory: {}, forecastSettings: forecastOptions(), currency: currencySettings(), hiddenCards: [], savedFilters: [], rules: [], wallet: walletData() };
   }
   function normalize(raw) {
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw Error('This is not an OddDough backup.');
@@ -1540,6 +1540,7 @@
     result.holdings=list(raw.holdings).map((h,i)=>holding({...h,id:'holding-'+i}));portfolio(result);
     result.balanceHistory=list(raw.balanceHistory).map(h=>{if(!validDate(h.date)||h.date>localDate())throw Error('Invalid balance history date.');return {date:h.date,value:number(h.value,-MAX),investments:number(h.investments||0)};}).sort((a,b)=>a.date.localeCompare(b.date));
     if(new Set(result.balanceHistory.map(h=>h.date)).size!==result.balanceHistory.length)throw Error('Duplicate balance history dates.');
+    result.balanceChecks=list(raw.balanceChecks).map((c,i)=>{if(!c||typeof c!=='object')throw Error('Invalid balance check.');if(!validDate(c.date)||c.date>localDate())throw Error('Invalid balance check date.');accountById(result,c.accountId);const statement=number(c.statement,-MAX),calculated=number(c.calculated,-MAX);return {id:'check-'+i,accountId:c.accountId,date:c.date,statement,calculated,difference:number(dollars(cents(statement)-cents(calculated)),-MAX)};}).sort((a,b)=>a.date.localeCompare(b.date));
     result.lifeEvents=list(raw.lifeEvents).map((e,i)=>lifeEvent({...e,id:'event-'+i}));
     result.merchantMemory={};
     if(raw.merchantMemory!==undefined){
@@ -2169,9 +2170,8 @@
   // Multiple income streams (roadmap #19): group expected income by source
   // over the coming months; each stream tracks hours and rate, and the
   // summary shows combined and per-stream monthly equivalents.
-  function incomeStreams(state, monthsAhead = 12) {
+  function incomeStreams(state, monthsAhead = 12, today = localDate()) {
     monthsAhead = Math.max(1, Math.min(60, Math.round(number(monthsAhead, 1))));
-    const today = localDate();
     const [y, m] = today.split('-').map(Number);
     const endDate = new Date(Date.UTC(y, m - 1 + monthsAhead, 0)).toISOString().slice(0, 10);
     const byLabel = {};
@@ -3066,10 +3066,27 @@
     const probe={...state,accounts,profile:{...state.profile}};syncBalance(probe); // validates rates before committing
     state.accounts=accounts;state.profile.balance=probe.profile.balance;
   }
+  // Statement balance checks (merged from OpenLedger): record what a
+  // statement says an account held versus the balance OddDough calculates,
+  // keeping the difference on record. A check NEVER adjusts the ledger.
+  function recordBalanceCheck(state, input) {
+    const a = accountById(state, input && input.accountId);
+    if (!input || !validDate(input.date) || input.date > localDate()) throw Error('Enter a statement date on or before today.');
+    const statement = number(input.statementBalance, -MAX);
+    const calculated = a.balance;
+    const entry = { id: input.id || 'check-' + Date.now().toString(36), accountId: a.id, date: input.date, statement, calculated, difference: number(dollars(cents(statement) - cents(calculated)), -MAX) };
+    state.balanceChecks = [...(state.balanceChecks || []), entry].sort((x, y) => x.date.localeCompare(y.date));
+    return entry;
+  }
+  function removeBalanceCheck(state, id) {
+    const checks = state.balanceChecks || [];
+    if (!checks.some(c => c.id === id)) throw Error('Balance check not found.');
+    state.balanceChecks = checks.filter(c => c.id !== id);
+  }
   function removeAccount(state,id) {
     const a=accountById(state,id);
     if(state.accounts.length===1 || cents(a.balance)!==0) throw Error('Keep at least one account and transfer or reconcile its balance to zero first.');
-    if(state.transactions.some(t=>t.accountId===id || t.toAccountId===id) || state.bills.concat(state.incomes).some(x=>x.accountId===id)) throw Error('This account is used by history or planned payments. Keep it to preserve those records.');
+    if(state.transactions.some(t=>t.accountId===id || t.toAccountId===id) || state.bills.concat(state.incomes).some(x=>x.accountId===id) || (state.balanceChecks||[]).some(c=>c.accountId===id)) throw Error('This account is used by history or planned payments. Keep it to preserve those records.');
     const accounts=state.accounts.filter(x=>x.id!==id);
     const probe={...state,accounts,profile:{...state.profile}};syncBalance(probe); // validates before committing
     state.accounts=accounts;state.profile.balance=probe.profile.balance;
@@ -3677,7 +3694,7 @@
     state.budgetMoves.push({ id: 'move-' + Date.now(), date: localDate(), from: from.category, to: to.category, amount });
     return state;
   }
-  const api = { quickAdd, encryptBackup, decryptBackup, walletData, parseWallet, receiveWallet, resolveWallet, reconcileCSV, applyReconciliation, moveBudget, debtPayoff, sinkingFunds, goalPaycheckAmount, milestoneProgress, loanAmortization, holdingGains, dividendStats, dripProjection, contributionStats, manualNetWorth, yearInReview, seasonalView, spendHeatmap, dailyBalanceForecast, anomalies, parseQuickEntry, explainNumber, suggestCategory, reportCSV, shareSummary, fullExport, addAnnotation, saveCustomCategory, detectPaychecks, saveCreditCard, creditCardStatus, planCardPayment, saveSeason, seasonCalendar, parseOFX, refreshPrices, number, cents, dollars, localDate, validDate, daysBetween, addDays, label, blank, normalize, demo, forecast, settle, netCents, reservesCents, repeat, nextDate, expand, transaction, saveTransaction, removeTransaction, splitTransaction, findDuplicates, mergeDuplicates,
+  const api = { quickAdd, encryptBackup, decryptBackup, walletData, parseWallet, receiveWallet, resolveWallet, reconcileCSV, applyReconciliation, recordBalanceCheck, removeBalanceCheck, moveBudget, debtPayoff, sinkingFunds, goalPaycheckAmount, milestoneProgress, loanAmortization, holdingGains, dividendStats, dripProjection, contributionStats, manualNetWorth, yearInReview, seasonalView, spendHeatmap, dailyBalanceForecast, anomalies, parseQuickEntry, explainNumber, suggestCategory, reportCSV, shareSummary, fullExport, addAnnotation, saveCustomCategory, detectPaychecks, saveCreditCard, creditCardStatus, planCardPayment, saveSeason, seasonCalendar, parseOFX, refreshPrices, number, cents, dollars, localDate, validDate, daysBetween, addDays, label, blank, normalize, demo, forecast, settle, netCents, reservesCents, repeat, nextDate, expand, transaction, saveTransaction, removeTransaction, splitTransaction, findDuplicates, mergeDuplicates,
   CURRENCIES, currencyCode, currencySettings, localeTag, rateFor, convertCents, rebaseRates, accountCurrency, totalInBase, formatMoney, formatDate,
   makeRule, matchRule, applyRules, previewRule, applyRule, refundTarget,
   emergencyFund, reimbursableSummary, markReimbursed, detectTransferPairs, taxSetAside,

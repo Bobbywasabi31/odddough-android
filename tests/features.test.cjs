@@ -534,7 +534,7 @@ test('income streams group by source with hours, rate, and monthly equivalents',
  const today=C.localDate(), ym=today.slice(0,7);
  const mk=(label,amount,date,hours,hourlyRate)=>({id:'i-'+label,label,amount,date,repeat:'monthly',category:'Income',accountId:'cash',anchorDay:Number(date.slice(8)),hours,hourlyRate});
  s.incomes.push(mk('Day job',3000,ym+'-15',160,25), mk('Gig work',800,ym+'-20',20,40));
- const r=C.incomeStreams(s,12);
+ const r=C.incomeStreams(s,12,ym+'-01');
  assert.equal(r.rows.length,2);
  const job=r.rows.find(x=>x.label==='Day job');
  assert.equal(job.hours,160);
